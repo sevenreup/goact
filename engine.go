@@ -2,6 +2,7 @@ package goact
 
 import (
 	"io"
+	"os"
 )
 
 type Views interface {
@@ -13,8 +14,8 @@ type GoactEngine struct {
 	compiler *GoactCompiler
 }
 
-func CreateGoatEngine(outDir string, viewFolder string) *GoactEngine {
-	compiler := NewGoactCompiler(outDir, viewFolder)
+func CreateGoatEngine(outDir string, workingDir string) *GoactEngine {
+	compiler := NewGoactCompiler(outDir, workingDir)
 	engine := GoactEngine{
 		compiler: compiler,
 	}
@@ -26,7 +27,11 @@ func (v GoactEngine) Load() error {
 }
 
 func (v *GoactEngine) Render(writer io.Writer, path string, values interface{}, args ...string) error {
-	html, err := v.compiler.Compile(path)
+	dat, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	html, err := v.compiler.Compile(string(dat))
 	if err != nil {
 		return err
 	}

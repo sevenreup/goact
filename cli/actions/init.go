@@ -24,7 +24,7 @@ func (a *InitAction) runNpmInit() {
 }
 
 func (a *InitAction) runNpmAddPackage() {
-	a.execCommand(false, "install", "-D", "tailwindcss", "postcss", "autoprefixer")
+	a.execCommand(false, "install", "-D", "tailwindcss", "postcss", "autoprefixer", "react", "react-dom")
 }
 
 func (a *InitAction) execCommand(useNpm bool, arg ...string) {

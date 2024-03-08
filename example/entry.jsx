@@ -1,7 +1,3 @@
-import { renderToString } from "react-dom/server.browser";
-
-import React from "react";
-
 const App = () => {
   return (
     <div>
@@ -9,5 +5,3 @@ const App = () => {
     </div>
   );
 };
-
-renderToString(<App />);

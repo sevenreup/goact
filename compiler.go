@@ -1,10 +1,12 @@
 package goact
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/buke/quickjs-go"
 	esbuild "github.com/evanw/esbuild/pkg/api"
 	"strings"
+	"text/template"
 )
 
 type BuildFiles struct {
@@ -16,20 +18,43 @@ var consolePolyfill = `var console = {log: function(){}};`
 
 type GoactCompiler struct {
 	Outdir     string
-	ViewFolder string
+	workingDir string
 }
 
-func NewGoactCompiler(outDir string, viewFolder string) *GoactCompiler {
+func NewGoactCompiler(outDir string, workingDir string) *GoactCompiler {
 	compiler := GoactCompiler{
 		Outdir:     outDir,
-		ViewFolder: viewFolder,
+		workingDir: workingDir,
 	}
 	return &compiler
 }
 
-func (g *GoactCompiler) Compile(path string) (string, error) {
+var templateStr = "import { renderToString } from \"react-dom/server.browser\";" +
+	"import React from \"react\";" +
+	"" +
+	"{{ .Content }}" +
+	"" +
+	"renderToString(<App />);"
+
+func (g *GoactCompiler) Compile(content string) (string, error) {
+	temp, err := template.New(templateStr).Parse(templateStr)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	err = temp.Execute(&buf, map[string]string{
+		"Content": content,
+	})
+	if err != nil {
+		return "", err
+	}
+	fmt.Println(buf.String())
+	std := esbuild.StdinOptions{
+		Contents:   buf.String(),
+		Loader:     esbuild.LoaderTSX,
+		ResolveDir: g.workingDir,
+	}
 	opts := esbuild.BuildOptions{
-		EntryPoints:       []string{path},
 		Outdir:            g.Outdir,
 		Platform:          esbuild.PlatformNode,
 		Metafile:          true,
@@ -38,6 +63,7 @@ func (g *GoactCompiler) Compile(path string) (string, error) {
 		MinifyIdentifiers: true,
 		MinifySyntax:      true,
 		Write:             false,
+		Stdin:             &std,
 		Inject: []string{
 			"./shims.js",
 		},

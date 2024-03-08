@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	engine := goact.CreateGoatEngine("./dist", "./view")
+	engine := goact.CreateGoatEngine("./dist", "./")
 	var buf bytes.Buffer
 	err := engine.Render(&buf, "./example/entry.jsx", "")
 	if err != nil {
