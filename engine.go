@@ -31,7 +31,9 @@ func (v *GoactEngine) Render(writer io.Writer, path string, values interface{}, 
 	if err != nil {
 		return err
 	}
-	html, err := v.compiler.Compile(string(dat))
+	// TODO: Read the layout files
+	// TODO: Cache the reads
+	html, err := v.compiler.Compile(string(dat), "")
 	if err != nil {
 		return err
 	}
