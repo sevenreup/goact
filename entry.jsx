@@ -1,4 +1,5 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import { renderToString } from "react-dom/server.browser";
+
 import React from "react";
 
 const App = () => {
@@ -9,5 +10,4 @@ const App = () => {
   );
 };
 
-const html = renderToStaticMarkup(<App />);
-console.log(html);
+renderToString(<App />);
