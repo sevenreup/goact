@@ -10,7 +10,7 @@ import (
 func main() {
 	engine := goact.CreateGoatEngine("./dist", "./")
 	var buf bytes.Buffer
-	err := engine.Render(&buf, "./example/entry.jsx", "")
+	err := engine.Render(&buf, "./entry.jsx", "")
 	if err != nil {
 		log.Panic(err)
 	}
