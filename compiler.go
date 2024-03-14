@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/buke/quickjs-go"
 	esbuild "github.com/evanw/esbuild/pkg/api"
+	html2 "github.com/sevenreup/goact/html"
+	"log"
 	"strings"
 	"text/template"
 )
@@ -18,35 +20,43 @@ var consolePolyfill = `var console = {log: function(){}};`
 var shims = "\nvar process = { env: new Proxy({}, { get: () => '', }) }"
 
 type GoactCompiler struct {
-	Outdir     string
+	OutputDir  string
 	workingDir string
+	IsDebug    bool
 }
 
-func NewGoactCompiler(outDir string, workingDir string) *GoactCompiler {
+func NewGoactCompiler(outDir string, workingDir string, isDebug bool) *GoactCompiler {
 	compiler := GoactCompiler{
-		Outdir:     outDir,
+		OutputDir:  outDir,
 		workingDir: workingDir,
+		IsDebug:    isDebug,
 	}
 	return &compiler
 }
 
-var templateStr = "import { renderToString } from \"react-dom/server.browser\";" +
-	"\n{{ .Imports }}" +
-	"import React from \"react\";" +
-	"\n" +
-	"{{ .Content }}" +
-	"" +
-	"\nrenderToString(<App />);"
+func (g *GoactCompiler) Compile(content string, layout string, props string) (string, error) {
+	var tmpl *template.Template
 
-func (g *GoactCompiler) Compile(content string, imports string) (string, error) {
-	temp, err := template.New(templateStr).Parse(templateStr)
-	if err != nil {
-		return "", err
+	if len(layout) > 0 {
+		temp, err := template.New(html2.BaseHtmlWithLayout).Parse(html2.BaseHtmlWithLayout)
+		if err != nil {
+			return "", err
+		}
+		tmpl = temp
+	} else {
+		temp, err := template.New(html2.BaseHtmlNoLayout).Parse(html2.BaseHtmlNoLayout)
+		if err != nil {
+			return "", err
+		}
+		tmpl = temp
 	}
+
 	var buf bytes.Buffer
-	err = temp.Execute(&buf, map[string]string{
-		"Content": content,
-		"Imports": imports,
+	err := tmpl.Execute(&buf, map[string]string{
+		"FilePath":   content,
+		"Content":    "",
+		"LayoutPath": layout,
+		"Props":      fmt.Sprintf("const props = %s;", props),
 	})
 	if err != nil {
 		return "", err
@@ -58,15 +68,20 @@ func (g *GoactCompiler) Compile(content string, imports string) (string, error) 
 		ResolveDir: g.workingDir,
 	}
 	opts := esbuild.BuildOptions{
-		Outdir:            g.Outdir,
+		Outdir:            g.OutputDir,
 		Platform:          esbuild.PlatformNode,
-		Metafile:          true,
+		Metafile:          false,
 		Bundle:            true,
-		MinifyWhitespace:  true,
-		MinifyIdentifiers: true,
-		MinifySyntax:      true,
-		Write:             false,
+		MinifyWhitespace:  !g.IsDebug,
+		MinifyIdentifiers: !g.IsDebug,
+		MinifySyntax:      !g.IsDebug,
+		Write:             true,
 		Stdin:             &std,
+		JSXDev:            true,
+		JSX:               esbuild.JSXAutomatic,
+		Loader: map[string]esbuild.Loader{
+			".js": esbuild.LoaderJSX,
+		},
 		Banner: map[string]string{
 			"js": textEncoderPolyfill + consolePolyfill + shims,
 		},
@@ -85,7 +100,9 @@ func (g *GoactCompiler) Compile(content string, imports string) (string, error) 
 	}
 
 	html, err := renderReactToHTMLNewQuick(build.Js)
+	log.Print(html)
 	if err != nil {
+		log.Print(err)
 		return "", err
 	}
 	return html, nil
