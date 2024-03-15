@@ -3,6 +3,7 @@ package goact
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/sevenreup/goact/types"
 	"github.com/sevenreup/goact/utils"
 	"io"
 )
@@ -13,13 +14,26 @@ type Views interface {
 }
 
 type GoactEngine struct {
+	opt      *GoactEngineOpts
 	compiler *GoactCompiler
 }
 
-func CreateGoatEngine(outDir string, workingDir string, isDebug bool) *GoactEngine {
-	compiler := NewGoactCompiler(outDir, workingDir, isDebug)
+type GoactEngineOpts struct {
+	OutputDir        string
+	WorkingDir       string
+	IsDebug          bool
+	StructPath       string
+	TsTypeOutputPath string
+}
+
+func CreateGoactEngine(opts *GoactEngineOpts) *GoactEngine {
+	compiler := NewGoactCompiler(opts.OutputDir, opts.WorkingDir, opts.IsDebug)
 	engine := GoactEngine{
 		compiler: compiler,
+		opt:      opts,
+	}
+	if opts.IsDebug {
+		types.StartTsGenerator(opts.StructPath, opts.TsTypeOutputPath)
 	}
 	return &engine
 }
