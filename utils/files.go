@@ -3,7 +3,7 @@ package utils
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"strings"
 )
 
 func FileExists(name string) bool {
@@ -12,23 +12,8 @@ func FileExists(name string) bool {
 }
 
 func FormatPath(p string) string {
-	absPath, err := filepath.Abs(p)
-	if err != nil {
+	if strings.HasPrefix(p, "./") {
 		return p
 	}
-
-	if !filepath.IsAbs(absPath) {
-		return p
-	}
-
-	relPath, err := filepath.Rel(".", absPath)
-	if err != nil {
-		return p
-	}
-
-	if relPath == p {
-		return p
-	}
-
-	return fmt.Sprintf(".%s", string(filepath.Separator)+relPath)
+	return fmt.Sprintf("./%s", p)
 }
