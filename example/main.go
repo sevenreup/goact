@@ -17,10 +17,12 @@ func main() {
 	}
 	engine := goact.CreateGoactEngine(&opts)
 	var buf bytes.Buffer
-	err := engine.Render(&buf, "./entry.jsx", "")
+	err := engine.Render(&buf, "./entry.tsx", map[string]string{
+		"title": "Hello World",
+	})
 	if err != nil {
 		log.Panic(err)
 	}
 	s := buf.String()
-	fmt.Println(s)
+	fmt.Printf("---Output Html----\n %s", s)
 }

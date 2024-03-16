@@ -2,10 +2,10 @@ package goact
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/sevenreup/goact/types"
 	"github.com/sevenreup/goact/utils"
 	"io"
+	"path/filepath"
 )
 
 type Views interface {
@@ -43,7 +43,7 @@ func (v GoactEngine) Load() error {
 }
 
 func (v *GoactEngine) Render(writer io.Writer, path string, values interface{}, args ...string) error {
-	actualPath := fmt.Sprintf("./%s", path)
+	actualPath := utils.FormatPath(path)
 	props, err := propsToJsonString(values)
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func (v *GoactEngine) Render(writer io.Writer, path string, values interface{}, 
 }
 
 func (v *GoactEngine) getLayoutPath() string {
-	baseLayoutPath := fmt.Sprintf("%s/layout.tsx", v.compiler.workingDir)
+	baseLayoutPath := utils.FormatPath(filepath.Join(v.compiler.workingDir, "layout.tsx"))
 	exists := utils.FileExists(baseLayoutPath)
 	if exists {
 		return "./layout.tsx"

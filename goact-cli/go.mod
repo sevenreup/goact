@@ -1,4 +1,4 @@
-module github.com/sevenreup/goact/cli
+module github.com/sevenreup/goact/goact-cli
 
 go 1.21.3
 
