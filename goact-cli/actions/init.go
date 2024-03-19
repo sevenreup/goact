@@ -90,12 +90,8 @@ func createTailwindConfig() {
 	defer file.Close()
 
 	content := `module.exports = {
-  purge: [],
-  darkMode: false, // or 'media' or 'class'
+  content: ["./**/*.{html,jsx,tsx}"],
   theme: {
-    extend: {},
-  },
-  variants: {
     extend: {},
   },
   plugins: [],

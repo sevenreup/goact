@@ -2,8 +2,11 @@ package goact
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/sevenreup/goact/html"
 	"github.com/sevenreup/goact/types"
 	"github.com/sevenreup/goact/utils"
+	"html/template"
 	"io"
 	"path/filepath"
 )
@@ -19,15 +22,37 @@ type GoactEngine struct {
 }
 
 type GoactEngineOpts struct {
-	OutputDir        string
-	WorkingDir       string
-	IsDebug          bool
-	StructPath       string
+	// The output directory for all the generated files
+	OutputDir string
+	// The root directory of the views
+	WorkingDir string
+	// This toggles minification of the generated files
+	IsDebug bool
+	// Location of structs used to pass props to the template
+	StructPath string
+	// The output of the auto-gen typescript types
 	TsTypeOutputPath string
+	// The base layout to use for rendering (This is optional, if you want a custom one make sure it matches the default)
+	HtmlBaseLayout string
+	// This is the default data to pass to the template on render if not provided in the render function
+	DefaultRenderData RenderData
+	// To stop the engine from injecting the generated CSS directly into the page (If you have a postprocess step)
+	InjectCss bool
+}
+
+type RenderData struct {
+	// The document title
+	Title string
+	// Content to insert in the head
+	Head template.HTML
+	// A list of meta tags to insert in the head
+	MetaTags map[string]string
+	// Props to pass to the rendered page
+	Props interface{}
 }
 
 func CreateGoactEngine(opts *GoactEngineOpts) *GoactEngine {
-	compiler := NewGoactCompiler(opts.OutputDir, opts.WorkingDir, opts.IsDebug)
+	compiler := NewGoactCompiler(opts.OutputDir, opts.WorkingDir, opts.InjectCss, opts.IsDebug)
 	engine := GoactEngine{
 		compiler: compiler,
 		opt:      opts,
@@ -43,17 +68,28 @@ func (v GoactEngine) Load() error {
 }
 
 func (v *GoactEngine) Render(writer io.Writer, path string, values interface{}, args ...string) error {
+	renderValues, ok := values.(RenderData)
+	if !ok {
+		return errors.New("Value has to be of type goact.RenderData")
+	}
 	actualPath := utils.FormatPath(path)
-	props, err := propsToJsonString(values)
+	props, err := propsToJsonString(renderValues.Props)
 	if err != nil {
 		return err
 	}
+
 	layout := v.getLayoutPath()
-	html, err := v.compiler.Compile(actualPath, layout, props)
+	var baseLayout string
+	if len(v.opt.HtmlBaseLayout) > 0 {
+		baseLayout = v.opt.HtmlBaseLayout
+	} else {
+		baseLayout = html.BaseHtmlLayout
+	}
+	htmlData, err := v.compiler.Compile(actualPath, layout, props, baseLayout, renderValues, v.opt.DefaultRenderData)
 	if err != nil {
 		return err
 	}
-	_, err = writer.Write([]byte(html))
+	_, err = writer.Write([]byte(htmlData))
 	if err != nil {
 		return err
 	}
